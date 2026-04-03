@@ -1,0 +1,9 @@
+version: 1
+policy_packs:
+  - aws-foundation
+  - aws-eks
+fail_on: high
+output:
+  format: console
+  path: null
+

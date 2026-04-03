@@ -1,0 +1,21 @@
+{
+  "format_version": "1.2",
+  "resource_changes": [
+    {
+      "address": "aws_eks_cluster.platform",
+      "type": "aws_eks_cluster",
+      "change": {
+        "after": {
+          "vpc_config": [
+            {
+              "endpoint_public_access": true
+            }
+          ],
+          "enabled_cluster_log_types": [],
+          "encryption_config": []
+        }
+      }
+    }
+  ]
+}
+

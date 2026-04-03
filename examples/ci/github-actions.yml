@@ -1,0 +1,27 @@
+name: Terraform Policy Check
+
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+
+jobs:
+  terraguard:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Install TerraGuard
+        run: pip install -e ..
+      - name: Terraform Init
+        run: terraform init -input=false
+      - name: Terraform Validate
+        run: terraform validate
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan -input=false
+      - name: TerraGuard Scan
+        run: terraguard scan --tfplan tfplan --format json --output terraguard-results.json
+

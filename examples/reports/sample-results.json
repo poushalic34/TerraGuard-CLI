@@ -1,0 +1,24 @@
+{
+  "failed": true,
+  "fail_on": "high",
+  "summary": {
+    "total": 1,
+    "critical": 1,
+    "high": 0,
+    "medium": 0,
+    "low": 0,
+    "info": 0
+  },
+  "findings": [
+    {
+      "policy_id": "TG_AWS_SG_001",
+      "title": "Security groups must not expose SSH to the internet",
+      "severity": "critical",
+      "resource_type": "aws_security_group",
+      "resource_address": "aws_security_group.open_ssh",
+      "message": "Security group allows SSH ingress from 0.0.0.0/0.",
+      "remediation": "Restrict SSH ingress to approved CIDR ranges or use SSM Session Manager."
+    }
+  ]
+}
+

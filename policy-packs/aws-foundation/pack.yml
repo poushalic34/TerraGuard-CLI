@@ -1,0 +1,39 @@
+name: aws-foundation
+description: Baseline AWS security policies for Terraform plans.
+policies:
+  - id: TG_AWS_S3_001
+    title: S3 public access block must be enabled
+    severity: high
+    resource: s3
+    file: s3.rego
+  - id: TG_AWS_EC2_001
+    title: EC2 instances must require IMDSv2
+    severity: high
+    resource: ec2
+    file: ec2.rego
+  - id: TG_AWS_EBS_001
+    title: EBS volumes must be encrypted
+    severity: high
+    resource: ebs
+    file: ebs.rego
+  - id: TG_AWS_KMS_001
+    title: KMS key rotation must be enabled
+    severity: medium
+    resource: kms
+    file: kms.rego
+  - id: TG_AWS_SG_001
+    title: Security groups must not expose SSH to the internet
+    severity: critical
+    resource: security-group
+    file: security_group.rego
+  - id: TG_AWS_VPC_001
+    title: VPC flow logs should be configured
+    severity: medium
+    resource: vpc
+    file: vpc.rego
+  - id: TG_AWS_IAM_001
+    title: IAM policies should avoid wildcard admin permissions
+    severity: high
+    resource: iam
+    file: iam.rego
+

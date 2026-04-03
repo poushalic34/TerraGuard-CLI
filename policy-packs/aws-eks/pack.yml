@@ -1,0 +1,24 @@
+name: aws-eks
+description: EKS platform security policies for Terraform plans.
+policies:
+  - id: TG_AWS_EKS_001
+    title: EKS public endpoint access must be restricted
+    severity: high
+    resource: eks
+    file: eks_cluster.rego
+  - id: TG_AWS_EKS_002
+    title: EKS control plane logging must be enabled
+    severity: medium
+    resource: eks
+    file: eks_cluster.rego
+  - id: TG_AWS_EKS_003
+    title: EKS secrets encryption should use KMS
+    severity: high
+    resource: eks
+    file: eks_cluster.rego
+  - id: TG_AWS_EKS_004
+    title: EKS node groups should not use public subnets
+    severity: high
+    resource: eks
+    file: eks_node_group.rego
+
