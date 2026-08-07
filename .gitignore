@@ -1,22 +1,46 @@
 __pycache__/
 *.py[cod]
+*$py.class
 *.egg-info/
+.eggs/
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
 .venv/
 venv/
 dist/
 build/
+*.egg
 
+# Terraform / OpenTofu local state
 .terraform/
 *.tfstate
 *.tfstate.*
 tfplan
 tfplan.json
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
 
+# TerraGuard local project files
 .terraguard/
+.terraguard-ignore.yml
 terraguard-results.json
 terraguard-report.md
 terraguard-report.html
 terraguard.sarif
 
+# Generated demo artifacts (keep checked-in samples)
+examples/reports/*-results.json
+examples/reports/*-pr-comment.md
+examples/reports/*.sarif
+!examples/reports/sample-results.json
+!examples/reports/sample-report.md
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
