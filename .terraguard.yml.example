@@ -3,7 +3,11 @@ policy_packs:
   - aws-foundation
   - aws-eks
 fail_on: high
+changed_only: false
+# policy_dirs:
+#   - .terraguard/packs
+# suppressions_path: .terraguard-ignore.yml
+# terraform_binary: terraform
 output:
   format: console
   path: null
-

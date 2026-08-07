@@ -25,7 +25,7 @@ dev = [
 ]
 
 [project.scripts]
-terraguard = "terraguard.cli:app"
+terraguard = "terraguard.cli:run"
 
 [tool.hatch.build.targets.wheel]
 packages = ["terraguard"]

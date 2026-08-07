@@ -8,4 +8,5 @@ SEVERITIES = ("info", "low", "medium", "high", "critical")
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 BUILTIN_POLICY_ROOT = PROJECT_ROOT / "policy-packs"
+CUSTOM_POLICY_ROOT = Path(".terraguard/packs")
 

@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://terraguard.dev/schemas/findings.schema.json",
+  "title": "TerraGuard ScanResult",
+  "type": "object",
+  "required": ["schema_version", "failed", "fail_on", "summary", "findings"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "failed": { "type": "boolean" },
+    "fail_on": { "type": "string" },
+    "summary": {
+      "type": "object",
+      "required": ["total", "critical", "high", "medium", "low", "info"],
+      "properties": {
+        "total": { "type": "integer" },
+        "critical": { "type": "integer" },
+        "high": { "type": "integer" },
+        "medium": { "type": "integer" },
+        "low": { "type": "integer" },
+        "info": { "type": "integer" },
+        "suppressed": { "type": "integer" }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "suppressed": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "expired_suppressions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["policy_id"],
+        "properties": {
+          "policy_id": { "type": "string" },
+          "resource": { "type": ["string", "null"] },
+          "expires": { "type": ["string", "null"] },
+          "owner": { "type": "string" },
+          "ticket": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "required": [
+        "policy_id",
+        "title",
+        "severity",
+        "resource_type",
+        "resource_address",
+        "message",
+        "remediation"
+      ],
+      "properties": {
+        "policy_id": { "type": "string" },
+        "title": { "type": "string" },
+        "severity": { "type": "string" },
+        "resource_type": { "type": "string" },
+        "resource_address": { "type": "string" },
+        "message": { "type": "string" },
+        "remediation": { "type": "string" },
+        "controls": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "fix_hcl": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

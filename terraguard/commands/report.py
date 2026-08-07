@@ -4,7 +4,7 @@ from pathlib import Path
 import typer
 
 from terraguard.core.findings import Finding, ScanResult
-from terraguard.output import html, json, markdown, sarif
+from terraguard.output import html, json, markdown, pr_comment, sarif
 
 app = typer.Typer(no_args_is_help=False)
 
@@ -12,7 +12,11 @@ app = typer.Typer(no_args_is_help=False)
 @app.callback(invoke_without_command=True)
 def command(
     input: Path = typer.Option(..., "--input", help="Scan result JSON file."),
-    output_format: str = typer.Option("markdown", "--format", help="markdown, html, json, sarif."),
+    output_format: str = typer.Option(
+        "markdown",
+        "--format",
+        help="markdown, html, json, sarif, pr-comment.",
+    ),
     output: Path | None = typer.Option(None, "--output", help="Write report to a file."),
 ) -> None:
     """Render a report from scan results."""
@@ -20,6 +24,9 @@ def command(
     result = ScanResult(
         findings=tuple(Finding.from_opa_result(item) for item in data.get("findings", [])),
         fail_on=str(data.get("fail_on", "high")),
+        suppressed=tuple(Finding.from_opa_result(item) for item in data.get("suppressed", [])),
+        expired_suppressions=tuple(data.get("expired_suppressions") or ()),
+        schema_version=str(data.get("schema_version", "1.0.0")),
     )
     rendered = _render(output_format, result)
     if output:
@@ -37,5 +44,6 @@ def _render(fmt: str, result: ScanResult) -> str:
         return html.render(result)
     if fmt == "sarif":
         return sarif.render(result)
+    if fmt == "pr-comment":
+        return pr_comment.render(result)
     raise typer.BadParameter(f"Unknown report format: {fmt}")
-

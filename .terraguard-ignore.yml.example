@@ -1,0 +1,7 @@
+suppressions:
+  # - policy_id: TG_AWS_SG_001
+  #   resource: aws_security_group\.open_ssh
+  #   expires: "2026-12-31"
+  #   owner: platform@example.com
+  #   ticket: SEC-123
+  #   reason: Temporary exception pending SSM migration

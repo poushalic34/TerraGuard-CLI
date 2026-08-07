@@ -1,3 +1,5 @@
+import json
+
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -13,15 +15,10 @@ def command(
     policy_pack: str | None = typer.Option(None, "--policy-pack", help="Filter by policy pack."),
     resource: str | None = typer.Option(None, "--resource", help="Filter by resource area."),
     severity: str | None = typer.Option(None, "--severity", help="Filter by severity."),
+    as_json: bool = typer.Option(False, "--as-json", help="Print policies as JSON."),
 ) -> None:
     """List available built-in policies."""
-    table = Table(title="TerraGuard Policies")
-    table.add_column("Pack")
-    table.add_column("Policy ID")
-    table.add_column("Severity")
-    table.add_column("Resource")
-    table.add_column("Title")
-
+    rows = []
     for pack in list_policy_packs():
         if policy_pack and pack.name != policy_pack:
             continue
@@ -30,7 +27,35 @@ def command(
                 continue
             if severity and policy.severity != severity.lower():
                 continue
-            table.add_row(pack.name, policy.policy_id, policy.severity, policy.resource, policy.title)
+            rows.append(
+                {
+                    "pack": pack.name,
+                    "policy_id": policy.policy_id,
+                    "severity": policy.severity,
+                    "resource": policy.resource,
+                    "controls": list(policy.controls),
+                    "title": policy.title,
+                }
+            )
+
+    if as_json:
+        typer.echo(json.dumps(rows, indent=2))
+        return
+
+    table = Table(title="TerraGuard Policies", expand=True)
+    table.add_column("Pack", no_wrap=True)
+    table.add_column("Policy ID", no_wrap=True)
+    table.add_column("Sev", no_wrap=True)
+    table.add_column("Resource", no_wrap=True)
+    table.add_column("Title")
+
+    for row in rows:
+        table.add_row(
+            row["pack"],
+            row["policy_id"],
+            row["severity"],
+            row["resource"],
+            row["title"],
+        )
 
     console.print(table)
-
