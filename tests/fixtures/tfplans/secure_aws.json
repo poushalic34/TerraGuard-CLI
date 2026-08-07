@@ -1,0 +1,142 @@
+{
+  "format_version": "1.2",
+  "resource_changes": [
+    {
+      "address": "aws_s3_bucket_public_access_block.secure",
+      "type": "aws_s3_bucket_public_access_block",
+      "change": {
+        "after": {
+          "block_public_acls": true,
+          "block_public_policy": true,
+          "ignore_public_acls": true,
+          "restrict_public_buckets": true
+        }
+      }
+    },
+    {
+      "address": "aws_s3_bucket_versioning.secure",
+      "type": "aws_s3_bucket_versioning",
+      "change": {
+        "after": {
+          "versioning_configuration": [
+            {
+              "status": "Enabled"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "aws_instance.secure",
+      "type": "aws_instance",
+      "change": {
+        "after": {
+          "metadata_options": [
+            {
+              "http_tokens": "required"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "aws_ebs_volume.secure",
+      "type": "aws_ebs_volume",
+      "change": {
+        "after": {
+          "encrypted": true
+        }
+      }
+    },
+    {
+      "address": "aws_kms_key.secure",
+      "type": "aws_kms_key",
+      "change": {
+        "after": {
+          "enable_key_rotation": true
+        }
+      }
+    },
+    {
+      "address": "aws_security_group.restricted",
+      "type": "aws_security_group",
+      "change": {
+        "after": {
+          "ingress": [
+            {
+              "from_port": 22,
+              "to_port": 22,
+              "cidr_blocks": ["10.0.0.0/8"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "aws_vpc.main",
+      "type": "aws_vpc",
+      "change": {
+        "after": {
+          "cidr_block": "10.0.0.0/16"
+        }
+      }
+    },
+    {
+      "address": "aws_flow_log.main",
+      "type": "aws_flow_log",
+      "change": {
+        "after": {
+          "resource_id": "aws_vpc.main"
+        }
+      }
+    },
+    {
+      "address": "aws_iam_policy.readonly",
+      "type": "aws_iam_policy",
+      "change": {
+        "after": {
+          "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::example/*\"}]}"
+        }
+      }
+    },
+    {
+      "address": "aws_iam_role.scoped",
+      "type": "aws_iam_role",
+      "change": {
+        "after": {
+          "assume_role_policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"ec2.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+        }
+      }
+    },
+    {
+      "address": "aws_db_instance.secure",
+      "type": "aws_db_instance",
+      "change": {
+        "after": {
+          "storage_encrypted": true,
+          "publicly_accessible": false
+        }
+      }
+    },
+    {
+      "address": "aws_cloudtrail.secure",
+      "type": "aws_cloudtrail",
+      "change": {
+        "after": {
+          "is_multi_region_trail": true,
+          "enable_log_file_validation": true
+        }
+      }
+    },
+    {
+      "address": "aws_lb_listener.secure",
+      "type": "aws_lb_listener",
+      "change": {
+        "after": {
+          "protocol": "HTTPS",
+          "ssl_policy": "ELBSecurityPolicy-TLS13-1-2-2021-06"
+        }
+      }
+    }
+  ]
+}

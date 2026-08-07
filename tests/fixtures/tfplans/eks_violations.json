@@ -1,0 +1,89 @@
+{
+  "format_version": "1.2",
+  "resource_changes": [
+    {
+      "address": "aws_eks_cluster.platform",
+      "type": "aws_eks_cluster",
+      "change": {
+        "after": {
+          "vpc_config": [
+            {
+              "endpoint_public_access": true,
+              "endpoint_private_access": false,
+              "public_access_cidrs": ["0.0.0.0/0"]
+            }
+          ],
+          "enabled_cluster_log_types": null,
+          "encryption_config": []
+        }
+      }
+    },
+    {
+      "address": "aws_eks_cluster.partial_logs",
+      "type": "aws_eks_cluster",
+      "change": {
+        "after": {
+          "vpc_config": [
+            {
+              "endpoint_public_access": false,
+              "endpoint_private_access": true
+            }
+          ],
+          "enabled_cluster_log_types": ["api"],
+          "encryption_config": [
+            {
+              "resources": ["secrets"],
+              "provider": [
+                {
+                  "key_arn": "arn:aws:kms:us-east-1:123456789012:key/demo"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "aws_eks_node_group.public",
+      "type": "aws_eks_node_group",
+      "change": {
+        "after": {
+          "subnet_ids": ["subnet-public-a", "subnet-public-b"]
+        }
+      }
+    },
+    {
+      "address": "aws_eks_node_group.ssh",
+      "type": "aws_eks_node_group",
+      "change": {
+        "after": {
+          "subnet_ids": ["subnet-private-a", "subnet-private-b"],
+          "remote_access": [
+            {
+              "ec2_ssh_key": "bastion-key"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "aws_eks_addon.vpc_cni",
+      "type": "aws_eks_addon",
+      "change": {
+        "after": {
+          "addon_name": "vpc-cni",
+          "addon_version": null
+        }
+      }
+    },
+    {
+      "address": "aws_iam_role.irsa_open",
+      "type": "aws_iam_role",
+      "change": {
+        "after": {
+          "assume_role_policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Federated\":\"arn:aws:iam::123456789012:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/EXAMPLE\"},\"Action\":\"*\"}]}"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,173 @@
+{
+  "format_version": "1.2",
+  "resource_changes": [
+    {
+      "address": "aws_s3_bucket_public_access_block.public",
+      "type": "aws_s3_bucket_public_access_block",
+      "change": {
+        "after": {
+          "block_public_acls": false,
+          "block_public_policy": false,
+          "ignore_public_acls": false,
+          "restrict_public_buckets": false
+        }
+      }
+    },
+    {
+      "address": "aws_s3_bucket_versioning.disabled",
+      "type": "aws_s3_bucket_versioning",
+      "change": {
+        "after": {
+          "versioning_configuration": [
+            {
+              "status": "Disabled"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "aws_instance.legacy",
+      "type": "aws_instance",
+      "change": {
+        "after": {
+          "metadata_options": [
+            {
+              "http_tokens": "optional"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "aws_ebs_volume.unencrypted",
+      "type": "aws_ebs_volume",
+      "change": {
+        "after": {
+          "encrypted": false
+        }
+      }
+    },
+    {
+      "address": "aws_kms_key.norotation",
+      "type": "aws_kms_key",
+      "change": {
+        "after": {
+          "enable_key_rotation": false
+        }
+      }
+    },
+    {
+      "address": "aws_security_group.open_ssh",
+      "type": "aws_security_group",
+      "change": {
+        "after": {
+          "ingress": [
+            {
+              "from_port": 22,
+              "to_port": 22,
+              "cidr_blocks": ["0.0.0.0/0"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "aws_security_group.open_rdp",
+      "type": "aws_security_group",
+      "change": {
+        "after": {
+          "ingress": [
+            {
+              "from_port": 3389,
+              "to_port": 3389,
+              "cidr_blocks": ["0.0.0.0/0"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "aws_security_group.open_all",
+      "type": "aws_security_group",
+      "change": {
+        "after": {
+          "ingress": [
+            {
+              "from_port": 0,
+              "to_port": 65535,
+              "protocol": "tcp",
+              "cidr_blocks": ["0.0.0.0/0"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "aws_vpc.main",
+      "type": "aws_vpc",
+      "change": {
+        "after": {
+          "cidr_block": "10.0.0.0/16"
+        }
+      }
+    },
+    {
+      "address": "aws_iam_policy.admin",
+      "type": "aws_iam_policy",
+      "change": {
+        "after": {
+          "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"*\",\"Resource\":\"*\"}]}"
+        }
+      }
+    },
+    {
+      "address": "aws_iam_role.open_trust",
+      "type": "aws_iam_role",
+      "change": {
+        "after": {
+          "assume_role_policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"*\"},\"Action\":\"sts:AssumeRole\"}]}"
+        }
+      }
+    },
+    {
+      "address": "aws_db_instance.public_unencrypted",
+      "type": "aws_db_instance",
+      "change": {
+        "after": {
+          "storage_encrypted": false,
+          "publicly_accessible": true
+        }
+      }
+    },
+    {
+      "address": "aws_cloudtrail.weak",
+      "type": "aws_cloudtrail",
+      "change": {
+        "after": {
+          "is_multi_region_trail": false,
+          "enable_log_file_validation": false
+        }
+      }
+    },
+    {
+      "address": "aws_lb_listener.http",
+      "type": "aws_lb_listener",
+      "change": {
+        "after": {
+          "protocol": "HTTP"
+        }
+      }
+    },
+    {
+      "address": "aws_lb_listener.legacy_tls",
+      "type": "aws_lb_listener",
+      "change": {
+        "after": {
+          "protocol": "HTTPS",
+          "ssl_policy": "ELBSecurityPolicy-TLS-1-1-2017-01"
+        }
+      }
+    }
+  ]
+}

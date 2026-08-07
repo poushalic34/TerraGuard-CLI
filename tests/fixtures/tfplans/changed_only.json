@@ -1,0 +1,37 @@
+{
+  "format_version": "1.2",
+  "resource_changes": [
+    {
+      "address": "aws_security_group.open_ssh",
+      "type": "aws_security_group",
+      "change": {
+        "actions": ["create"],
+        "after": {
+          "ingress": [
+            {
+              "from_port": 22,
+              "to_port": 22,
+              "cidr_blocks": ["0.0.0.0/0"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "address": "aws_security_group.noop",
+      "type": "aws_security_group",
+      "change": {
+        "actions": ["no-op"],
+        "after": {
+          "ingress": [
+            {
+              "from_port": 22,
+              "to_port": 22,
+              "cidr_blocks": ["0.0.0.0/0"]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
