@@ -1,155 +1,251 @@
 # TerraGuard CLI
 
-TerraGuard CLI is a personal platform engineering and DevSecOps project for shift-left Terraform security validation using OPA/Rego policy as code.
+Shift-left Terraform and OpenTofu security validation using OPA/Rego policy as code.
 
-The goal is to build a realistic developer-facing CLI that scans Terraform plans before `terraform apply`, evaluates AWS and EKS infrastructure against policy packs, explains violations clearly, and produces CI-friendly reports.
+TerraGuard scans infrastructure plans **before** `apply`, evaluates AWS and EKS resources against versioned policy packs, explains violations with remediation guidance, and produces CI-friendly reports — including SARIF and sticky GitHub PR comments.
 
-## Project Positioning
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-TerraGuard is designed to demonstrate practical knowledge across:
+## Why TerraGuard?
 
-- Terraform plan workflows
-- OPA/Rego policy authoring
-- AWS cloud security controls
-- EKS platform security
-- Python CLI and backend engineering
-- CI/CD policy gates
-- Developer experience for platform tooling
+Platform and cloud security teams need a developer-facing gate that:
 
-The portfolio story:
+- Works on real `terraform show -json` / `tofu show -json` output
+- Groups rules into packs (not a flat pile of scripts)
+- Fails CI on severity thresholds
+- Supports suppressions with expiry and ownership
+- Explains *why* a finding matters and how to fix it
 
-> I built a Python CLI that validates Terraform plans against OPA/Rego policy packs for AWS and EKS security, produces developer-friendly explanations and CI-ready reports, and demonstrates shift-left cloud governance.
+## Features
 
-## Core Workflow
+- **Plan-first scanning** — binary plans (`--tfplan`) or plan JSON (`--plan-json`)
+- **OpenTofu support** — auto-detects `terraform` or `tofu`, or set `--terraform-binary`
+- **Built-in packs** — `aws-foundation` and `aws-eks` (28 policies)
+- **Custom packs** — `--policy-dir` or `terraguard packs add` (path or git)
+- **Severity gate** — `--fail-on` / `fail_on` in `.terraguard.yml`
+- **Changed-only mode** — evaluate create/update/delete/replace resources
+- **Suppressions** — `.terraguard-ignore.yml` with expiry, owner, ticket, reason
+- **Coverage** — which plan resource types are covered by policies
+- **Outputs** — console, JSON, Markdown, HTML, SARIF, PR comment
+- **Sticky PR comments** — `terraguard comment --post` upserts one GitHub comment
+- **Explanations** — CIS/FSBP control IDs + optional HCL fix snippets
+- **Generators** — GitHub Action, pre-commit config, policy scaffolding
+- **OPA Rego tests** — pack-level unit tests run in CI
 
-```text
-Developer writes Terraform
-        |
-        v
-terraform plan -out=tfplan
-        |
-        v
-TerraGuard reads Terraform plan
-        |
-        v
-terraform show -json tfplan
-        |
-        v
-OPA evaluates Rego policy packs
-        |
-        v
-Findings, explanations, reports, CI exit code
-```
+## Requirements
 
-The preferred developer workflow is:
+- Python 3.10+
+- [OPA](https://www.openpolicyagent.org/) on `PATH`
+- Terraform and/or OpenTofu (needed for `--tfplan`)
+
+## Install
 
 ```bash
-terraform plan -out=tfplan
-terraguard scan --tfplan tfplan
+# From source (recommended while developing)
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+
+# Install OPA (macOS)
+brew install opa
+
+# Or via project script (Linux/macOS)
+bash scripts/install-opa.sh
 ```
 
-TerraGuard should handle the `terraform show -json` conversion internally so users do not need to create intermediate JSON files by hand.
-
-## Target Scope
-
-TerraGuard is AWS-first and EKS-focused. The first version validates Terraform-defined AWS infrastructure, especially resources commonly owned by platform and cloud security teams.
-
-Primary resource areas:
-
-- S3
-- EC2
-- EKS
-- EBS
-- KMS
-- Security Groups
-- VPC
-- IAM
-
-## Planned Commands
+Entry point:
 
 ```bash
-terraguard init
-terraguard scan
-terraguard explain
-terraguard generate
-terraguard list-policies
-terraguard validate
-terraguard report
-terraguard doctor
-terraguard version
+terraguard --help
+python -m terraguard --help
 ```
 
-Command intent:
-
-- `init`: create `.terraguard.yml` and starter local folders
-- `scan`: run Terraform plan validation against selected policy packs
-- `explain`: explain a policy or finding with remediation guidance
-- `generate`: scaffold policies, CI config, sample Terraform, or reports
-- `list-policies`: show available built-in policies
-- `validate`: validate TerraGuard config and Rego policy syntax
-- `report`: generate JSON, Markdown, HTML, or SARIF reports
-- `doctor`: verify local dependencies and project readiness
-- `version`: print TerraGuard version information
-
-## Policy Packs
-
-Policies should be grouped as packs rather than kept as one flat rules folder.
-
-Planned built-in packs:
-
-- `aws-foundation`
-- `aws-storage`
-- `aws-networking`
-- `aws-compute`
-- `aws-iam`
-- `aws-eks`
-
-Example policies:
-
-- S3 public access must be blocked
-- S3 buckets must use server-side encryption
-- EC2 instances must require IMDSv2
-- EBS volumes must be encrypted
-- KMS key rotation must be enabled
-- Security groups must not expose SSH or RDP to `0.0.0.0/0`
-- VPC flow logs must be enabled
-- EKS public endpoint access must be disabled or restricted
-- EKS control plane logging must be enabled
-- EKS secrets encryption must use KMS
-- EKS node groups must not run in public subnets
-- IAM policies must avoid wildcard actions and resources
-
-## Recommended Local Sequence
-
-First-time setup:
+## Quick start
 
 ```bash
+# Optional project bootstrap
 terraguard init
 terraguard doctor
-```
 
-Normal developer loop:
-
-```bash
+# From a Terraform root
 terraform init
-terraform validate
 terraform plan -out=tfplan
 terraguard scan --tfplan tfplan
+
+# Or from plan JSON
+terraform show -json tfplan > tfplan.json
+terraguard scan --plan-json tfplan.json --format json --output terraguard-results.json
 ```
 
-After a violation:
+Demo against checked-in fixtures (no cloud account):
 
 ```bash
-terraguard explain TG_AWS_S3_001
+terraguard scan \
+  --plan-json tests/fixtures/tfplans/aws_foundation_violations.json \
+  --policy-pack aws-foundation \
+  --format console
 ```
 
-Optional report:
+Offline example stacks (mock AWS provider):
 
 ```bash
-terraguard report --input terraguard-results.json --format markdown
+./scripts/generate-sample-plan.sh examples/terraform/vulnerable-aws
+terraguard scan --plan-json examples/terraform/vulnerable-aws/tfplan.json --policy-pack aws-foundation
 ```
 
-## Recommended CI Sequence
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `init` | Create `.terraguard.yml`, `.terraguard/`, `.terraguard-ignore.yml` |
+| `scan` | Evaluate a plan against selected packs |
+| `explain` | Show why a policy matters and how to fix it |
+| `list-policies` | List packs/policies (`--as-json`) |
+| `validate` | Validate config + Rego syntax |
+| `report` | Re-render scan JSON (`markdown`, `html`, `json`, `sarif`, `pr-comment`) |
+| `comment` | Render or post a sticky GitHub PR comment |
+| `coverage` | Map plan resource types to covering policies |
+| `packs add\|list` | Install/list custom packs under `.terraguard/packs` |
+| `generate` | Scaffold `github-action`, `pre-commit`, or a new policy |
+| `doctor` | Check terraform/tofu, opa, config, packs, suppressions |
+| `version` | Print version information |
+
+### Scan examples
+
+```bash
+# Multiple packs + severity gate
+terraguard scan --tfplan tfplan \
+  --policy-pack aws-foundation \
+  --policy-pack aws-eks \
+  --fail-on high
+
+# Diff-aware (skip no-op / read)
+terraguard scan --plan-json tfplan.json --changed-only
+
+# OpenTofu binary plan
+terraguard scan --tfplan tfplan --terraform-binary tofu
+
+# SARIF for code scanning
+terraguard scan --tfplan tfplan --format sarif --output terraguard.sarif
+
+# Suppressions file
+terraguard scan --plan-json tfplan.json --suppressions .terraguard-ignore.yml
+```
+
+Exit codes:
+
+| Code | Meaning |
+|------|---------|
+| `0` | Pass |
+| `1` | Findings at/above fail threshold, or expired suppressions |
+| `2` | User/config/dependency/plan error |
+
+### Explain
+
+```bash
+terraguard explain TG_AWS_SG_001
+terraguard explain --as-json TG_AWS_EKS_001
+```
+
+### Sticky PR comment
+
+```bash
+terraguard scan --tfplan tfplan --format json --output terraguard-results.json || true
+terraguard comment --input terraguard-results.json --post --title "TerraGuard Policy Scan"
+```
+
+Requires `GITHUB_TOKEN`, `GITHUB_REPOSITORY`, and a PR number (`--pr` or GitHub Actions event payload). Re-runs update the same comment using the `<!-- terraguard-scan-report -->` marker.
+
+### Coverage
+
+```bash
+terraguard coverage --plan-json tfplan.json --as-json
+```
+
+### Custom packs
+
+```bash
+terraguard packs add ./my-org-pack
+terraguard packs add https://github.com/org/terraguard-packs.git --name org-baseline
+terraguard packs list
+
+terraguard scan --plan-json tfplan.json --policy-dir .terraguard/packs --policy-pack org-baseline
+```
+
+### Generators
+
+```bash
+terraguard generate github-action
+terraguard generate pre-commit
+terraguard generate policy \
+  --id TG_AWS_RDS_003 \
+  --resource-type aws_db_instance \
+  --pack aws-foundation \
+  --resource rds \
+  --title "RDS backup retention"
+```
+
+## Configuration
+
+`.terraguard.yml` (see `.terraguard.yml.example`):
+
+```yaml
+version: 1
+policy_packs:
+  - aws-foundation
+  - aws-eks
+fail_on: high
+changed_only: false
+# policy_dirs:
+#   - .terraguard/packs
+# suppressions_path: .terraguard-ignore.yml
+# terraform_binary: terraform
+output:
+  format: console
+  path: null
+```
+
+### Suppressions
+
+`.terraguard-ignore.yml` (see `.terraguard-ignore.yml.example`):
+
+```yaml
+suppressions:
+  - policy_id: TG_AWS_SG_001
+    resource: aws_security_group\.legacy_bastion
+    expires: "2026-12-31"
+    owner: platform@example.com
+    ticket: SEC-123
+    reason: Pending SSM migration
+```
+
+- `resource` is a full-match regex against the Terraform address
+- Expired suppressions **fail** the scan even if no active findings remain
+
+## Policy packs
+
+### `aws-foundation`
+
+S3 public access / versioning, EC2 IMDSv2, EBS encryption, KMS rotation, security groups (SSH/RDP/all-ports), VPC flow logs, IAM wildcards and trust principals, RDS encryption/public access, CloudTrail, load balancer HTTP/TLS.
+
+### `aws-eks`
+
+Public endpoint controls and CIDRs, control plane logging (including audit/authenticator), secrets encryption, public node subnets, node SSH remote access, addon version pins, IRSA trust wildcards, private endpoint guidance.
+
+Policies declare optional CIS / AWS Foundational Security Best Practices control IDs in `pack.yml`, surfaced by `explain` and `list-policies`.
+
+Run Rego unit tests:
+
+```bash
+bash scripts/run-opa-tests.sh
+# or
+opa test policy-packs/aws-foundation/policies policy-packs/aws-foundation/tests
+opa test policy-packs/aws-eks/policies policy-packs/aws-eks/tests
+```
+
+## CI/CD
+
+### Recommended pipeline
 
 ```bash
 terraguard doctor
@@ -159,42 +255,50 @@ terraform plan -out=tfplan -input=false
 terraguard validate
 terraguard scan --tfplan tfplan --format json --output terraguard-results.json
 terraguard report --input terraguard-results.json --format markdown --output terraguard-report.md
+terraguard comment --input terraguard-results.json --post   # on pull_request
 ```
 
-The scan command should return non-zero when violations meet or exceed the configured failure threshold.
+### In this repo
 
-## MVP
+- `.github/workflows/test.yml` — lint, pytest, OPA tests
+- `.github/workflows/terraguard-demo.yml` — plan example stacks, assert findings, upload SARIF, post PR comments
+- `examples/ci/github-actions.yml` — copy-paste starter for consuming repos
+- `terraguard generate github-action` — scaffold a workflow with SARIF + sticky comments
 
-The first useful version includes:
+## Examples
 
-- Python CLI using Typer or Click
-- Terraform binary plan support through `terraform show -json`
-- OPA execution through the local `opa` binary
-- Built-in AWS foundation and AWS EKS policy packs
-- Human-readable terminal output
-- JSON output for CI
-- `.terraguard.yml` config support
-- Policy explanations with remediation guidance
-- Rego syntax validation
-- Sample vulnerable Terraform
-- GitHub Actions example
-- Unit tests for core parsing, policy loading, findings, and output formatting
+| Path | Purpose |
+|------|---------|
+| `examples/terraform/vulnerable-aws` | Intentionally insecure AWS resources |
+| `examples/terraform/secure-aws` | Hardened counterpart |
+| `examples/terraform/eks-vulnerable` | Insecure EKS settings |
+| `examples/terraform/eks-secure` | Hardened EKS settings |
+| `examples/reports/sample-*` | Sample scan JSON / Markdown |
+| `tests/fixtures/tfplans/` | Deterministic plan JSON for tests |
 
-## Later Enhancements
+## Development
 
-- SARIF output for GitHub code scanning
-- HTML reports
-- `terraguard generate github-action`
-- `terraguard generate sample-terraform --stack eks`
-- Custom organization policy packs
-- Pre-commit integration
-- Docker image
-- FastAPI service for scan APIs
-- Kubernetes manifest scanning for EKS workloads
-- Policy test runner with fixtures
+```bash
+pip install -e ".[dev]"
+ruff check .
+pytest
+bash scripts/run-opa-tests.sh
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Documentation
 
 - [Architecture](docs/architecture.md)
-- [File Structure](docs/file-structure.md)
-- [CLI Reference](docs/cli-reference.md)
+- [CLI reference](docs/cli-reference.md)
+- [Repository layout](docs/file-structure.md)
+- [Terraform plan JSON quirks](docs/terraform-plan-quirks.md)
+
+## Findings schema
+
+Machine-readable scan output includes `schema_version` and follows
+[`terraguard/schema/findings.schema.json`](terraguard/schema/findings.schema.json).
+
+## License
+
+MIT — see [LICENSE](LICENSE).

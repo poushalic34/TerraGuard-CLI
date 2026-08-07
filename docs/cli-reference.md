@@ -1,213 +1,99 @@
 # CLI Reference
 
-This document describes the planned TerraGuard command interface.
+TerraGuard command interface (implemented).
 
-## Global Options
+## Commands
 
-```bash
-terraguard [COMMAND] [OPTIONS]
-```
-
-Planned global options:
-
-- `--config PATH`: path to `.terraguard.yml`
-- `--policy-dir PATH`: additional custom policy directory
-- `--no-color`: disable colored terminal output
-- `--verbose`: enable detailed logs
-- `--quiet`: print only essential output
-
-## `terraguard init`
-
-Initialize TerraGuard in the current repository.
-
-```bash
-terraguard init
-```
-
-Planned options:
-
-- `--force`: overwrite existing generated files
-- `--policy-pack NAME`: add a default policy pack to the generated config
-
-Creates:
-
-- `.terraguard.yml`
-- `.terraguard/`
-- optional starter policy and report folders
+| Command | Purpose |
+|---------|---------|
+| `init` | Create `.terraguard.yml`, `.terraguard/`, `.terraguard-ignore.yml` |
+| `scan` | Evaluate a Terraform/OpenTofu plan against policy packs |
+| `explain` | Explain a policy ID (controls, remediation, suggested HCL) |
+| `generate` | Scaffold github-action, pre-commit, or policy files |
+| `list-policies` | List packs/policies (`--as-json`) |
+| `validate` | Validate config + Rego via `opa fmt` |
+| `report` | Re-render scan JSON as markdown/html/json/sarif/pr-comment |
+| `comment` | Render or post a sticky GitHub PR comment from scan JSON |
+| `coverage` | Show plan resource types vs covering policies |
+| `packs add\|list` | Install/list custom packs under `.terraguard/packs` |
+| `doctor` | Check terraform/tofu, opa, config, packs, suppressions |
+| `version` | Print version |
 
 ## `terraguard scan`
 
-Scan a Terraform plan against selected OPA/Rego policy packs.
-
 ```bash
 terraguard scan --tfplan tfplan
+terraguard scan --plan-json plan.json --policy-pack aws-foundation --fail-on high
+terraguard scan --plan-json plan.json --changed-only --suppressions .terraguard-ignore.yml
+terraguard scan --tfplan tfplan --terraform-binary tofu --format sarif --output terraguard.sarif
 ```
 
-Planned options:
+Key options:
 
-- `--tfplan PATH`: Terraform binary plan file created by `terraform plan -out=tfplan`
-- `--plan-json PATH`: Terraform plan JSON file created by `terraform show -json`
-- `--dir PATH`: Terraform project directory
-- `--policy-pack NAME`: policy pack to use, repeatable
-- `--fail-on SEVERITY`: minimum severity that causes a non-zero exit
-- `--format FORMAT`: output format, such as `console`, `json`, `markdown`, `html`, or `sarif`
-- `--output PATH`: write output to a file
+- `--tfplan` / `--plan-json`
+- `--policy-pack` (repeatable)
+- `--policy-dir` (repeatable custom pack roots)
+- `--suppressions`
+- `--changed-only`
+- `--terraform-binary` (`terraform` or `tofu`)
+- `--fail-on`
+- `--format` (`console`, `json`, `markdown`, `html`, `sarif`)
+- `--output`
 
-Examples:
+Exit codes: `0` pass, `1` failed threshold or expired suppressions, `2` usage/dependency/config error.
 
-```bash
-terraguard scan --tfplan tfplan
-terraguard scan --tfplan tfplan --policy-pack aws-foundation --policy-pack aws-eks
-terraguard scan --tfplan tfplan --fail-on high
-terraguard scan --tfplan tfplan --format json --output terraguard-results.json
+## Suppressions
+
+`.terraguard-ignore.yml`:
+
+```yaml
+suppressions:
+  - policy_id: TG_AWS_SG_001
+    resource: aws_security_group\.legacy
+    expires: "2026-12-31"
+    owner: platform@example.com
+    ticket: SEC-123
+    reason: Pending SSM migration
 ```
 
-## `terraguard explain`
-
-Explain a policy or finding.
-
-```bash
-terraguard explain TG_AWS_S3_001
-```
-
-Planned options:
-
-- `--policy-pack NAME`: restrict lookup to a policy pack
-- `--json`: print explanation as JSON
-
-Output should include:
-
-- Policy ID
-- Title
-- Severity
-- Why it matters
-- What resources it checks
-- Example failure
-- Remediation guidance
+Expired suppressions fail the scan even if no active findings remain.
 
 ## `terraguard generate`
 
-Generate starter files.
-
 ```bash
 terraguard generate github-action
+terraguard generate pre-commit
+terraguard generate policy --id TG_AWS_RDS_003 --resource-type aws_db_instance --pack aws-foundation --resource rds
 ```
 
-Planned generators:
-
-- `policy`: create a starter Rego policy
-- `github-action`: create a GitHub Actions workflow
-- `gitlab-ci`: create a GitLab CI workflow
-- `sample-terraform`: create vulnerable or secure Terraform examples
-- `config`: create a TerraGuard config file
-
-Examples:
+## `terraguard coverage`
 
 ```bash
-terraguard generate policy --resource s3
-terraguard generate github-action
-terraguard generate sample-terraform --stack eks --profile vulnerable
+terraguard coverage --plan-json plan.json --as-json
 ```
 
-## `terraguard list-policies`
-
-List available policy packs and policies.
+## `terraguard packs`
 
 ```bash
-terraguard list-policies
+terraguard packs add ./my-org-pack
+terraguard packs add https://github.com/org/terraguard-packs.git --name org-baseline
+terraguard packs list
 ```
 
-Planned options:
+## `terraguard comment`
 
-- `--policy-pack NAME`: list policies from one pack
-- `--resource RESOURCE`: filter by resource area
-- `--severity SEVERITY`: filter by severity
-- `--format FORMAT`: output as `table` or `json`
-
-Examples:
+Render a sticky PR comment body, or post/update it on GitHub.
 
 ```bash
-terraguard list-policies
-terraguard list-policies --policy-pack aws-eks
-terraguard list-policies --resource s3
-terraguard list-policies --severity high
+terraguard comment --input terraguard-results.json --output comment.md
+terraguard comment --input terraguard-results.json --post --title "TerraGuard Policy Scan"
 ```
 
-## `terraguard validate`
+`--post` uses `GITHUB_TOKEN` / `GH_TOKEN`, `GITHUB_REPOSITORY`, and the PR number from
+`--pr`, `GITHUB_PR_NUMBER`, or `GITHUB_EVENT_PATH`. Comments are upserted using the
+`<!-- terraguard-scan-report -->` marker so re-runs update the same thread.
 
-Validate TerraGuard config and policy syntax.
+## Findings schema
 
-```bash
-terraguard validate
-```
-
-Planned options:
-
-- `--config PATH`: validate a specific config file
-- `--policies PATH`: validate a policy directory
-- `--policy-pack NAME`: validate a built-in policy pack
-
-Examples:
-
-```bash
-terraguard validate
-terraguard validate --config .terraguard.yml
-terraguard validate --policy-pack aws-foundation
-```
-
-## `terraguard report`
-
-Render a report from scan results.
-
-```bash
-terraguard report --input terraguard-results.json --format markdown
-```
-
-Planned options:
-
-- `--input PATH`: scan result JSON file
-- `--format FORMAT`: `markdown`, `html`, `json`, or `sarif`
-- `--output PATH`: report output path
-
-Examples:
-
-```bash
-terraguard report --input terraguard-results.json --format markdown --output terraguard-report.md
-terraguard report --input terraguard-results.json --format html --output terraguard-report.html
-terraguard report --input terraguard-results.json --format sarif --output terraguard.sarif
-```
-
-## `terraguard doctor`
-
-Check whether the local environment is ready to run TerraGuard.
-
-```bash
-terraguard doctor
-```
-
-Checks:
-
-- Terraform is installed
-- OPA is installed
-- `.terraguard.yml` exists and is valid
-- Selected policy packs are available
-- Terraform plan input can be parsed
-
-Planned options:
-
-- `--json`: print machine-readable diagnostics
-
-## `terraguard version`
-
-Print TerraGuard version information.
-
-```bash
-terraguard version
-```
-
-Planned output:
-
-- TerraGuard version
-- Python version
-- Terraform version, when available
-- OPA version, when available
+Scan JSON includes `schema_version` and conforms to
+`terraguard/schema/findings.schema.json`.
