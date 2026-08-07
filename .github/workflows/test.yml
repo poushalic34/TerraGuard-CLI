@@ -14,10 +14,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Install OPA
+        run: bash scripts/install-opa.sh
       - name: Install
         run: pip install -e ".[dev]"
       - name: Lint
         run: ruff check .
       - name: Test
         run: pytest
-
+      - name: Rego policy tests
+        run: bash scripts/run-opa-tests.sh

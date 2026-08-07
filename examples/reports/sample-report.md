@@ -13,4 +13,3 @@
 - Resource type: `aws_security_group`
 - Message: Security group allows SSH ingress from 0.0.0.0/0.
 - Remediation: Restrict SSH ingress to approved CIDR ranges or use SSM Session Manager.
-

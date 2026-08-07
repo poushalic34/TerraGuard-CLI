@@ -8,7 +8,12 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-east-1"
+  region                      = "us-east-1"
+  access_key                  = "mock"
+  secret_key                  = "mock"
+  skip_credentials_validation = true
+  skip_metadata_api_check     = true
+  skip_requesting_account_id  = true
 }
 
 resource "aws_eks_cluster" "platform" {
@@ -29,5 +34,9 @@ resource "aws_eks_node_group" "public_nodes" {
   node_group_name = "public-nodes"
   node_role_arn   = "arn:aws:iam::123456789012:role/demo-node"
   subnet_ids      = ["subnet-public-a", "subnet-public-b"]
+  scaling_config {
+    desired_size = 1
+    max_size     = 1
+    min_size     = 1
+  }
 }
-

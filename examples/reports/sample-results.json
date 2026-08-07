@@ -1,4 +1,5 @@
 {
+  "schema_version": "1.0.0",
   "failed": true,
   "fail_on": "high",
   "summary": {
@@ -7,7 +8,8 @@
     "high": 0,
     "medium": 0,
     "low": 0,
-    "info": 0
+    "info": 0,
+    "suppressed": 0
   },
   "findings": [
     {
@@ -17,8 +19,11 @@
       "resource_type": "aws_security_group",
       "resource_address": "aws_security_group.open_ssh",
       "message": "Security group allows SSH ingress from 0.0.0.0/0.",
-      "remediation": "Restrict SSH ingress to approved CIDR ranges or use SSM Session Manager."
+      "remediation": "Restrict SSH ingress to approved CIDR ranges or use SSM Session Manager.",
+      "controls": ["CIS-AWS-5.2", "FSBP-EC2.13"],
+      "fix_hcl": null
     }
-  ]
+  ],
+  "suppressed": [],
+  "expired_suppressions": []
 }
-
