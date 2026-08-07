@@ -6,19 +6,86 @@ policies:
     severity: high
     resource: eks
     file: eks_cluster.rego
+    controls: ["FSBP-EKS.1"]
+    why: Public EKS API endpoints expand the cluster attack surface.
+    remediation: Disable public endpoint access or restrict public_access_cidrs to approved networks.
   - id: TG_AWS_EKS_002
     title: EKS control plane logging must be enabled
     severity: medium
     resource: eks
     file: eks_cluster.rego
+    controls: ["FSBP-EKS.2"]
+    why: Control plane logs support audit, incident response, and compliance.
+    remediation: Enable API, audit, authenticator, controllerManager, and scheduler logs as appropriate.
   - id: TG_AWS_EKS_003
     title: EKS secrets encryption should use KMS
     severity: high
     resource: eks
     file: eks_cluster.rego
+    controls: ["FSBP-EKS.3"]
+    why: Envelope encryption protects Kubernetes secrets at rest with a customer-managed key.
+    remediation: Configure encryption_config with a customer-managed KMS key for Kubernetes secrets.
   - id: TG_AWS_EKS_004
     title: EKS node groups should not use public subnets
     severity: high
     resource: eks
     file: eks_node_group.rego
-
+    controls: ["FSBP-EKS.6"]
+    why: Nodes in public subnets are directly reachable from the internet.
+    remediation: Place worker nodes in private subnets and route outbound traffic through NAT.
+  - id: TG_AWS_EKS_005
+    title: EKS public endpoint CIDRs must not be open to the world
+    severity: high
+    resource: eks
+    file: eks_cluster.rego
+    controls: ["FSBP-EKS.1"]
+    why: 0.0.0.0/0 on the API server makes authentication the only barrier.
+    remediation: Restrict public_access_cidrs to trusted networks.
+  - id: TG_AWS_EKS_006
+    title: EKS audit logging must be enabled
+    severity: high
+    resource: eks
+    file: eks_cluster.rego
+    controls: ["FSBP-EKS.2"]
+    why: Audit logs are required for security investigations.
+    remediation: Include audit in enabled_cluster_log_types.
+  - id: TG_AWS_EKS_007
+    title: EKS authenticator logging must be enabled
+    severity: medium
+    resource: eks
+    file: eks_cluster.rego
+    controls: ["FSBP-EKS.2"]
+    why: Authenticator logs help detect credential misuse.
+    remediation: Include authenticator in enabled_cluster_log_types.
+  - id: TG_AWS_EKS_008
+    title: EKS node groups should not enable SSH remote access
+    severity: high
+    resource: eks
+    file: eks_node_group.rego
+    controls: ["FSBP-EKS.6"]
+    why: SSH to nodes expands the attack surface and bypasses SSM controls.
+    remediation: Remove remote_access and use SSM Session Manager.
+  - id: TG_AWS_EKS_009
+    title: Critical EKS addons must pin a version
+    severity: medium
+    resource: eks
+    file: eks_addons.rego
+    controls: ["FSBP-EKS.8"]
+    why: Unpinned addons can drift to unexpected versions.
+    remediation: Set addon_version for vpc-cni, kube-proxy, and coredns.
+  - id: TG_AWS_EKS_010
+    title: EKS IRSA roles must not allow wildcard actions in trust
+    severity: high
+    resource: eks
+    file: eks_iam.rego
+    controls: ["FSBP-EKS.3"]
+    why: Wildcard trust actions weaken IRSA isolation.
+    remediation: Limit trust to sts:AssumeRoleWithWebIdentity for the OIDC subject.
+  - id: TG_AWS_EKS_011
+    title: EKS clusters with public endpoints should enable private access
+    severity: medium
+    resource: eks
+    file: eks_networking.rego
+    controls: ["FSBP-EKS.1"]
+    why: Private endpoint access keeps in-VPC traffic off the public API path.
+    remediation: Enable endpoint_private_access alongside any public endpoint.

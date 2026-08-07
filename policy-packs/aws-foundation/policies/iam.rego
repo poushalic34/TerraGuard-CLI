@@ -20,3 +20,20 @@ deny contains finding if {
 	}
 }
 
+deny contains finding if {
+	resource := input.resource_changes[_]
+	resource.type == "aws_iam_role"
+	after := resource.change.after
+	contains(after.assume_role_policy, "\"Principal\"")
+	contains(after.assume_role_policy, "\"AWS\":\"*\"")
+
+	finding := {
+		"policy_id": "TG_AWS_IAM_002",
+		"title": "IAM role trust policies must not allow all AWS principals",
+		"severity": "critical",
+		"resource_type": resource.type,
+		"resource_address": resource.address,
+		"message": "IAM role trust policy allows Principal AWS=*.",
+		"remediation": "Scope the trust policy principal to specific account roles or services.",
+	}
+}

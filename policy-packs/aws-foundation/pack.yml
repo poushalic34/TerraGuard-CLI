@@ -6,34 +6,134 @@ policies:
     severity: high
     resource: s3
     file: s3.rego
+    controls: ["CIS-AWS-2.1.1", "FSBP-S3.1"]
+    why: Public S3 buckets are a common source of data exposure.
+    remediation: Enable block_public_acls, block_public_policy, ignore_public_acls, and restrict_public_buckets.
+  - id: TG_AWS_S3_002
+    title: S3 bucket versioning should be enabled
+    severity: medium
+    resource: s3
+    file: s3_versioning.rego
+    controls: ["CIS-AWS-2.1.3"]
+    why: Versioning protects against accidental deletes and ransomware.
+    remediation: Set versioning_configuration status to Enabled.
   - id: TG_AWS_EC2_001
     title: EC2 instances must require IMDSv2
     severity: high
     resource: ec2
     file: ec2.rego
+    controls: ["FSBP-EC2.8"]
+    why: IMDSv1 is vulnerable to SSRF-based credential theft.
+    remediation: Set metadata_options.http_tokens to required on aws_instance resources.
   - id: TG_AWS_EBS_001
     title: EBS volumes must be encrypted
     severity: high
     resource: ebs
     file: ebs.rego
+    controls: ["CIS-AWS-2.2.1", "FSBP-EC2.7"]
+    why: Unencrypted volumes expose data at rest if disks are copied or snapshotted.
+    remediation: Set encrypted to true and use a customer-managed KMS key where required.
   - id: TG_AWS_KMS_001
     title: KMS key rotation must be enabled
     severity: medium
     resource: kms
     file: kms.rego
+    controls: ["CIS-AWS-3.8"]
+    why: Rotating keys limits the blast radius of key compromise.
+    remediation: Set enable_key_rotation to true for customer-managed KMS keys.
   - id: TG_AWS_SG_001
     title: Security groups must not expose SSH to the internet
     severity: critical
     resource: security-group
     file: security_group.rego
+    controls: ["CIS-AWS-5.2", "FSBP-EC2.13"]
+    why: Internet-wide SSH exposure enables brute-force and opportunistic attacks.
+    remediation: Restrict SSH ingress to approved CIDR ranges or use SSM Session Manager.
+  - id: TG_AWS_SG_002
+    title: Security groups must not expose RDP to the internet
+    severity: critical
+    resource: security-group
+    file: security_group.rego
+    controls: ["CIS-AWS-5.2"]
+    why: Internet-wide RDP exposure is a common ransomware entry point.
+    remediation: Restrict RDP ingress to approved CIDR ranges.
+  - id: TG_AWS_SG_003
+    title: Security groups must not expose all ports to the internet
+    severity: critical
+    resource: security-group
+    file: security_group.rego
+    controls: ["CIS-AWS-5.2", "FSBP-EC2.18"]
+    why: Wide-open security groups defeat network segmentation.
+    remediation: Replace 0-65535 or protocol -1 open ingress with least privilege.
   - id: TG_AWS_VPC_001
     title: VPC flow logs should be configured
     severity: medium
     resource: vpc
     file: vpc.rego
+    controls: ["CIS-AWS-3.9"]
+    why: Flow logs are required for network forensics and anomaly detection.
+    remediation: Create an aws_flow_log resource for the VPC and send logs to CloudWatch Logs or S3.
   - id: TG_AWS_IAM_001
     title: IAM policies should avoid wildcard admin permissions
     severity: high
     resource: iam
     file: iam.rego
-
+    controls: ["CIS-AWS-1.16"]
+    why: Wildcard Action and Resource grants overly broad privileges.
+    remediation: Replace wildcard permissions with least-privilege actions and scoped resources.
+  - id: TG_AWS_IAM_002
+    title: IAM role trust policies must not allow all AWS principals
+    severity: critical
+    resource: iam
+    file: iam.rego
+    controls: ["CIS-AWS-1.16", "FSBP-IAM.21"]
+    why: Trusting Principal AWS=* lets any AWS account assume the role.
+    remediation: Scope the trust policy principal to specific account roles or services.
+  - id: TG_AWS_RDS_001
+    title: RDS storage must be encrypted
+    severity: high
+    resource: rds
+    file: rds.rego
+    controls: ["CIS-AWS-2.3.1", "FSBP-RDS.3"]
+    why: Unencrypted databases expose sensitive data at rest.
+    remediation: Set storage_encrypted to true.
+  - id: TG_AWS_RDS_002
+    title: RDS instances must not be publicly accessible
+    severity: critical
+    resource: rds
+    file: rds.rego
+    controls: ["CIS-AWS-2.3.2", "FSBP-RDS.2"]
+    why: Public RDS endpoints expose databases to the internet.
+    remediation: Set publicly_accessible to false.
+  - id: TG_AWS_CT_001
+    title: CloudTrail must be multi-region
+    severity: high
+    resource: cloudtrail
+    file: cloudtrail.rego
+    controls: ["CIS-AWS-3.1"]
+    why: Single-region trails miss activity in other regions.
+    remediation: Set is_multi_region_trail to true.
+  - id: TG_AWS_CT_002
+    title: CloudTrail log file validation must be enabled
+    severity: medium
+    resource: cloudtrail
+    file: cloudtrail.rego
+    controls: ["CIS-AWS-3.2"]
+    why: Validation detects tampering with CloudTrail logs.
+    remediation: Set enable_log_file_validation to true.
+  - id: TG_AWS_ELB_001
+    title: Load balancer listeners must not use plain HTTP
+    severity: high
+    resource: elb
+    file: elb.rego
+    controls: ["FSBP-ELB.1"]
+    why: Plain HTTP exposes traffic to interception.
+    remediation: Use HTTPS/TLS listeners.
+  - id: TG_AWS_ELB_002
+    title: Load balancer TLS policy must be modern
+    severity: medium
+    resource: elb
+    file: elb.rego
+    controls: ["FSBP-ELB.17"]
+    why: Legacy TLS policies allow weak ciphers.
+    remediation: Use TLS1.2+ or TLS1.3 ELB security policies.
